@@ -1,0 +1,136 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("org.codehaus.groovy.modules.http-builder:http-builder:0.7.1")
+    }
+}
+
+wrapper {
+    distributionUrl = "${gradleWrapperUrl}"
+}
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'jacoco'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group "${group}"
+version "${version}"
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'commons-codec:commons-codec:1.11'
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+}
+
+ext {
+    set('springCloudVersion', "Hoxton.SR8")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.cloud:spring-cloud-starter'
+    implementation("io.micrometer:micrometer-registry-prometheus:${microMeterVersion}")
+    implementation("io.swagger:swagger-annotations:${swaggerVersion}")
+    implementation("io.springfox:springfox-swagger2:${swaggerFoxVersion}")
+    implementation("io.springfox:springfox-swagger-ui:${swaggerFoxVersion}")
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    //Test Dependency
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation("org.codehaus.groovy:groovy-all:2.4.11")
+    testImplementation("org.spockframework:spock-core:${spockVersion}")
+    testImplementation("org.spockframework:spock-spring:${spockVersion}")
+
+    //LayerTest
+
+    //Kafak
+    implementation 'org.apache.kafka:kafka-streams'
+    implementation 'org.springframework.cloud:spring-cloud-starter'
+    implementation 'org.springframework.cloud:spring-cloud-stream'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
+    implementation 'org.springframework.kafka:spring-kafka'
+
+
+    //Kafka test
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-support'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.4"
+}
+
+jacocoTestCoverageVerification {
+    afterEvaluate {
+
+    }
+    violationRules {
+        rule {
+            limit {
+                //The following configuration will enforce that 100% of the lines are executed during tests
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.8
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+jacocoTestReport {
+    afterEvaluate {
+
+    }
+
+    reports {
+        xml.enabled true
+        xml.destination file("${buildDir}/reports/jacoco/jacocoTestReport.xml")
+        csv.enabled true
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+}
+
+sourceSets {
+    test {
+        groovy {
+            srcDirs = ['src/test/unit/groovy']
+        }
+    }
+}
+
+test {
+    finalizedBy jacocoTestReport, jacocoTestCoverageVerification
+}

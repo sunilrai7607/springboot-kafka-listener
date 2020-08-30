@@ -1,0 +1,31 @@
+server:
+  port: 9095
+spring:
+  cloud:
+    stream:
+      default-binder: kafka
+      kafka:
+        binder:
+          configuration:
+            key.serializer: org.apache.kafka.common.serialization.StringSerializer
+            value.serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+            key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+          broker:
+            - localhost:9092
+      bindings:
+        input:
+          binder: kafka
+          destination: test
+          content-type: application/json
+          group.id: input-group-1
+        output:
+          binder: kafka
+          destination: test
+          group: output-group-1
+          content-type: application/json
+kscapser:
+  kafka:
+    producer:
+      topics:
+        channel: sample.message.chat.events
